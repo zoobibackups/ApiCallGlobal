@@ -1,51 +1,78 @@
-import React, {useEffect, useState} from 'react';
+import React, { Component } from 'react';
 import {
   Dimensions,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-  View,
   ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import {useDispatch, useSelector} from 'react-redux';
+import { connect } from 'react-redux';
 import apiCall from '../funtions/apiCall';
-import {setPeriodicData} from '../store/actions/userActions';
-function HomeScreen({navigation}) {
-  const dispatch = useDispatch();
-  const {jwt_token, api_data} = useSelector(state => state.userReducer);
-  const [count, setCount] = useState(0)
-  useEffect( () => {
-    let timeinterval = setInterval( async() => {
-      let myData = await apiCall(jwt_token, count);
-      setCount(count => count + 1)
-      dispatch(setPeriodicData(myData));
+import { setPeriodicData } from '../store/actions/userActions';
+class HomeScreen extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      count: 0,
+    };
+  }
+
+  componentDidMount() {
+    this.timeinterval = setInterval(async () => {
+      const {jwt_token} = this.props;
+      const {count} = this.state;
+      const myData = await apiCall(jwt_token, count);
+      this.setState(prevState => ({
+        count: prevState.count + 1,
+      }));
+      this.props.setPeriodicData(myData);
     }, 5000);
+  }
 
-    return () => clearInterval(timeinterval);
-  }, [count]);
+  componentWillUnmount() {
+    clearInterval(this.timeinterval);
+  }
 
-  return (
-    <ScrollView>
-    <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-      <Text>Home Screen</Text>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('ProfileScreen')}
-        style={styles.buttonStyle}>
-        <Text style={{color: '#fff', fontWeight: '600'}}>Profile Screen</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('SettingScreen')}
-        style={styles.buttonStyle}>
-        <Text style={{color: '#fff', fontWeight: '600'}}>Setting Screen</Text>
-      </TouchableOpacity>
-
-      <Text style={{margin:20}} >{JSON.stringify(api_data)}</Text>
-    </View>
-    </ScrollView>
-  );
+  render() {
+    const {navigation, api_data} = this.props;
+    return (
+      <ScrollView>
+        <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+          <Text>Home Screen</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ProfileScreen')}
+            style={styles.buttonStyle}>
+            <Text style={{color: '#fff', fontWeight: '600'}}>
+              Profile Screen
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('SettingScreen')}
+            style={styles.buttonStyle}>
+            <Text style={{color: '#fff', fontWeight: '600'}}>
+              Setting Screen
+            </Text>
+          </TouchableOpacity>
+          <Text style={{margin: 20}}>{JSON.stringify(api_data)}</Text>
+        </View>
+      </ScrollView>
+    );
+  }
 }
+const mapStateToProps = state => {
+  const {api_data, jwt_token} = state.userReducer;
+  return {
+    api_data: api_data,
+    jwt_token,
+  };
+};
 
-export default HomeScreen;
+const mapDispatchToProps = {
+  setPeriodicData,
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(HomeScreen);
 
 const styles = StyleSheet.create({
   buttonStyle: {
